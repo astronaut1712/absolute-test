@@ -1,0 +1,17 @@
+# Absolute API service
+# =======================
+#
+[Unit]
+Description=Absolute API Server
+After=network.target
+
+[Service]
+User=absolute
+ExecStart=/usr/local/bin/uwsgi --py /opt/absolute/api.py
+WorkingDirectory=/opt/absolute
+Restart=always
+RestartSec=60
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

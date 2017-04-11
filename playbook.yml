@@ -1,0 +1,84 @@
+- hosts: all
+  become: yes
+  become_user: root
+  gather_facts: False
+  pre_tasks:
+    - name: Install python for Ansible
+      raw: sudo apt-get -qq -y update && sudo apt-get install -q -y python-minimal python-dev python-simplejson lsb-release
+      changed_when: False
+
+- hosts: all
+  gather_facts: True
+  become: yes
+  become_user: root
+
+  tasks:
+
+    - name: create absolute user
+      user:
+        name:    absolute
+        comment: absolute User
+        shell:   /bin/bash
+        home:    /opt/absolute
+
+    - name: Install pip lib dependencies
+      apt: "name={{ item }} state=present cache_valid_time=3600 update_cache=yes"
+      with_items:
+        - python-pip
+
+    - name: Install python libs
+      pip: "name={{ item }} state=present"
+      with_items:
+        - flask
+        - uwsgi
+
+    - name: Copy source code to server
+      copy: src={{item}} dest=/opt/absolute directory_mode=yes
+      with_fileglob:
+        - src/*
+
+    - name: Install service absolute api
+      template:
+        src: ansible/templates/systemd/absolute-api.service.j2
+        dest: /etc/systemd/system/absolute-api.service
+        mode: 0644
+        owner: root
+        group: root
+
+    - name: Restart absolute-api systemd
+      systemd:
+        name: "absolute-api"
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        masked: no
+
+    - name: Adding Nginx signing key
+      tags: [ nginx, nginx_key ]
+      apt_key: url=http://nginx.org/keys/nginx_signing.key state=present
+
+    - name: Adding nginx offical repos
+      tags: [ nginx ]
+      apt_repository:
+        repo: "deb http://nginx.org/packages/{{ ansible_lsb.id|lower }}/ {{ ansible_lsb.codename }} nginx #Nginx"
+        state: present
+        update_cache: yes
+
+    - name: Installing Nginx
+      tags: [ nginx ]
+      apt: name=nginx state=present
+
+    - name: Add nginx configuration
+      tags: [ nginx ]
+      template:
+        src: ansible/templates/nginx/000_default_sites.j2
+        dest: "/etc/nginx/conf.d/000_default_sites.conf"
+        mode: 0644
+
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+        masked: no

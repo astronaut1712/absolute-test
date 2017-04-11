@@ -1,0 +1,1 @@
+{"virtualbox":{"/opt/absolute":{"guestpath":"/opt/absolute","hostpath":"/home/quang/Working/quang/github/absolute-test/src","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"/home/quang/Working/quang/github/absolute-test","disabled":false,"__vagrantfile":true}}}
